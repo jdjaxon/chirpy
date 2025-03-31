@@ -1,3 +1,5 @@
+include .env
+
 BIN=out
 DB_NAME=chirpy
 DB_VOLUME=chirpy_data_vol
@@ -16,7 +18,7 @@ build:
 
 .PHONY: manage-db
 manage-db:
-	@psql -h localhost -U postgres ${DB_NAME}
+	@psql ${DB_URL}
 
 
 .PHONY: start-db
