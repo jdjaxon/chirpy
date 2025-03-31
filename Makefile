@@ -1,5 +1,5 @@
 BIN=out
-DB_NAME=chirpy_db
+DB_NAME=chirpy
 DB_VOLUME=chirpy_data_vol
 DB_IMAGE=postgres:17.4-alpine
 
@@ -16,7 +16,7 @@ build: start-db
 
 .PHONY: manage-db
 manage-db:
-	@psql -h localhost -U postgres
+	@psql -h localhost -U postgres ${DB_NAME}
 
 
 .PHONY: start-db
