@@ -15,7 +15,7 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	chirp := chirpReq{}
 	err := decoder.Decode(&chirp)
 	if err != nil {
-		writeJSONWithError(
+		respondWithError(
 			w,
 			http.StatusInternalServerError,
 			err,
@@ -25,7 +25,7 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(chirp.Body) > maxChirpLen {
-		writeJSONWithError(w, http.StatusBadRequest, nil, "Chirp is too long")
+		respondWithError(w, http.StatusBadRequest, nil, "Chirp is too long")
 		return
 	}
 
@@ -35,5 +35,5 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	resp := validResp{
 		Valid: true,
 	}
-	writeJSON(w, http.StatusOK, resp)
+	respondWithJSON(w, http.StatusOK, resp)
 }
