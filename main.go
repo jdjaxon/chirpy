@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 )
 
-const appEndpoint = "/app"
-
 type apiConfig struct {
 	fileserverHits atomic.Int32
 }
@@ -17,14 +15,14 @@ func main() {
 	port := "8080"
 	mux := http.NewServeMux()
 	cfg := &apiConfig{}
-
-	mux.Handle(
-		appEndpoint+"/",
-		cfg.middlewareMetricsInc(
-			http.StripPrefix(appEndpoint, http.FileServer(http.Dir(serverRootDir))),
-		),
+	fileserverHanlder := http.StripPrefix(
+		"/app",
+		http.FileServer(http.Dir(serverRootDir)),
 	)
+
+	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHanlder))
 	mux.HandleFunc("GET /api/healthz", handlerHealthcheck)
+	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handlerResetMetrics)
 
