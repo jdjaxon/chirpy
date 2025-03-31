@@ -5,12 +5,12 @@ DB_IMAGE=postgres:17.4-alpine
 
 
 .PHONY: run
-run: build start-db
+run: build
 	./$(BIN)
 
 
 .PHONY: build
-build: start-db
+build:
 	go build -o $(BIN)
 
 
