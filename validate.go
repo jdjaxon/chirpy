@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 const maxChirpLen = 140
@@ -30,10 +31,29 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type validResp struct {
-		Valid bool `json:"valid"`
+		Body string `json:"cleaned_body"`
 	}
+
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+
+	cleanedBody := cleanBody(chirp.Body, badWords)
 	resp := validResp{
-		Valid: true,
+		Body: cleanedBody,
 	}
 	respondWithJSON(w, http.StatusOK, resp)
+}
+
+func cleanBody(body string, badWords map[string]struct{}) string {
+	words := strings.Split(body, " ")
+	for i, word := range words {
+		if _, exists := badWords[strings.ToLower(word)]; exists {
+			words[i] = "****"
+		}
+	}
+
+	return strings.Join(words, " ")
 }
