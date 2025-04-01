@@ -1,20 +1,40 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/jdjaxon/chirpy/internal/database"
+	"github.com/joho/godotenv"
+	// You have to import the driver, but it don't use it directly.
+	// The underscore tells Go that you're importing it for its side effects.
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 func main() {
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("Failed to connect to DB: %s\n", err)
+		return
+	}
+	dbQueries := database.New(db)
+
 	serverRootDir := "."
 	port := "8080"
 	mux := http.NewServeMux()
-	cfg := &apiConfig{}
+	cfg := &apiConfig{
+		dbQueries: dbQueries,
+	}
 	fileserverHanlder := http.StripPrefix(
 		"/app",
 		http.FileServer(http.Dir(serverRootDir)),
