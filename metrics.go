@@ -8,17 +8,15 @@ import (
 func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	header := fmt.Sprintf("<h1>Welcome, Chirpy Admin</h1>")
-	metrics := fmt.Sprintf("<p>Chirpy has been visited %d times!</p>", cfg.fileserverHits.Load())
-	resp := fmt.Sprintf("<html><body>%s%s</html></body>", header, metrics)
-	w.Write([]byte(resp))
-}
+	htmlResp := fmt.Sprintf(`
+<html>
+	<body>
+		<h1>Welcome, Chirpy Admin</h1>")
+		<p>Chirpy has been visited %d times!</p>",
+	</body>
+</html>`, cfg.fileserverHits.Load())
 
-func (cfg *apiConfig) handlerResetMetrics(w http.ResponseWriter, r *http.Request) {
-	cfg.fileserverHits.Store(0)
-	w.Header().Set("content-type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Reset hits to 0"))
+	w.Write([]byte(htmlResp))
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
