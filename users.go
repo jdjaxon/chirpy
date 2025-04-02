@@ -33,6 +33,16 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := cfg.db.CreateUser(r.Context(), userReq.Email)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			err,
+			"Error creating user",
+		)
+		return
+	}
+
 	resp := User(user)
 	respondWithJSON(w, http.StatusCreated, resp)
 }
