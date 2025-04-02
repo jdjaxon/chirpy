@@ -16,7 +16,7 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
 }
 
 func main() {
@@ -33,16 +33,20 @@ func main() {
 	port := "8080"
 	mux := http.NewServeMux()
 	cfg := &apiConfig{
-		dbQueries: dbQueries,
+		db: dbQueries,
 	}
+
 	fileserverHanlder := http.StripPrefix(
 		"/app",
 		http.FileServer(http.Dir(serverRootDir)),
 	)
 
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHanlder))
+
 	mux.HandleFunc("GET /api/healthz", handlerHealthcheck)
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
+
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handlerResetMetrics)
 
