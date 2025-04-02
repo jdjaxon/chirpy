@@ -9,11 +9,11 @@ import (
 const maxChirpLen = 140
 
 func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
-	type chirpReq struct {
+	type request struct {
 		Body string `json:"body"`
 	}
 	decoder := json.NewDecoder(r.Body)
-	chirp := chirpReq{}
+	chirp := request{}
 	err := decoder.Decode(&chirp)
 	if err != nil {
 		respondWithError(
@@ -30,7 +30,7 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type validResp struct {
+	type response struct {
 		Body string `json:"cleaned_body"`
 	}
 
@@ -41,7 +41,7 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleanedBody := cleanBody(chirp.Body, badWords)
-	resp := validResp{
+	resp := response{
 		Body: cleanedBody,
 	}
 	respondWithJSON(w, http.StatusOK, resp)
