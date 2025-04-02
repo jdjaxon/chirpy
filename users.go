@@ -7,13 +7,20 @@ import (
 	"time"
 )
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
 func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
-	type newUserReq struct {
+	type request struct {
 		Email string `json:"email"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	userReq := newUserReq{}
+	userReq := request{}
 	err := decoder.Decode(&userReq)
 	if err != nil {
 		respondWithError(
@@ -23,13 +30,6 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 			"Error decoding request parameters",
 		)
 		return
-	}
-
-	type User struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
 	}
 
 	user, err := cfg.db.CreateUser(r.Context(), userReq.Email)
@@ -43,6 +43,12 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := User(user)
+	resp := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
 	respondWithJSON(w, http.StatusCreated, resp)
 }
