@@ -17,29 +17,41 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
-	db, err := sql.Open("postgres", dbURL)
+	if dbURL == "" {
+		log.Fatal("DB_URL is required")
+	}
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM is required")
+	}
+
+	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("Failed to connect to DB: %s\n", err)
 		return
 	}
-	dbQueries := database.New(db)
+	dbQueries := database.New(dbConn)
 
 	serverRootDir := "."
 	port := "8080"
-	mux := http.NewServeMux()
+
 	cfg := &apiConfig{
-		db: dbQueries,
+		db:       dbQueries,
+		platform: platform,
 	}
 
 	fileserverHanlder := http.StripPrefix(
 		"/app",
 		http.FileServer(http.Dir(serverRootDir)),
 	)
+
+	mux := http.NewServeMux()
 
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHanlder))
 
@@ -48,7 +60,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
 
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
-	mux.HandleFunc("POST /admin/reset", cfg.handlerResetMetrics)
+	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
 
 	server := &http.Server{
 		Addr:    ":" + port,
