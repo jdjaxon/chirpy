@@ -26,6 +26,7 @@ func main() {
 	if dbURL == "" {
 		log.Fatal("DB_URL is required")
 	}
+
 	platform := os.Getenv("PLATFORM")
 	if platform == "" {
 		log.Fatal("PLATFORM is required")
@@ -56,7 +57,7 @@ func main() {
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHanlder))
 
 	mux.HandleFunc("GET /api/healthz", handlerHealthcheck)
-	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/chirps", handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
 
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
