@@ -4,13 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jdjaxon/chirpy/internal/database"
 )
 
 const maxChirpLen = 140
 
-func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		Body   string    `json:"body"`
 		UserID uuid.UUID `json:"user_id"`
@@ -33,22 +43,35 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, nil, "Chirp is too long")
 		return
 	}
-
-	type response struct {
-		Body string `json:"cleaned_body"`
-	}
-
 	badWords := map[string]struct{}{
 		"kerfuffle": {},
 		"sharbert":  {},
 		"fornax":    {},
 	}
-
 	cleanedBody := cleanBody(chirp.Body, badWords)
-	resp := response{
-		Body: cleanedBody,
+
+	newChirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
+		Body:   cleanedBody,
+		UserID: chirp.UserID,
+	})
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			err,
+			"Error creating chirp",
+		)
+		return
 	}
-	respondWithJSON(w, http.StatusOK, resp)
+
+	resp := Chirp{
+		ID:        newChirp.ID,
+		CreatedAt: newChirp.CreatedAt,
+		UpdatedAt: newChirp.UpdatedAt,
+		Body:      newChirp.Body,
+		UserID:    newChirp.UserID,
+	}
+	respondWithJSON(w, http.StatusCreated, resp)
 }
 
 func cleanBody(body string, badWords map[string]struct{}) string {
@@ -58,6 +81,5 @@ func cleanBody(body string, badWords map[string]struct{}) string {
 			words[i] = "****"
 		}
 	}
-
 	return strings.Join(words, " ")
 }
