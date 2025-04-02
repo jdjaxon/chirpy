@@ -4,14 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 const maxChirpLen = 140
 
 func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	type request struct {
-		Body string `json:"body"`
+		Body   string    `json:"body"`
+		UserID uuid.UUID `json:"user_id"`
 	}
+
 	decoder := json.NewDecoder(r.Body)
 	chirp := request{}
 	err := decoder.Decode(&chirp)
