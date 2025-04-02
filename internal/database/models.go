@@ -5,7 +5,6 @@
 package database
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,7 +14,7 @@ type Chirp struct {
 	ID        uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Body      sql.NullString
+	Body      string
 	UserID    uuid.UUID
 }
 
