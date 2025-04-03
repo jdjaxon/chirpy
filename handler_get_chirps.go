@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
@@ -19,11 +21,9 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	type response struct {
 		Chirps []Chirp
 	}
-	resp := response{
-		Chirps: []Chirp{},
-	}
+	resp := []Chirp{}
 	for _, chirp := range chirps {
-		resp.Chirps = append(resp.Chirps, Chirp{
+		resp = append(resp, Chirp{
 			ID:        chirp.ID,
 			CreatedAt: chirp.CreatedAt,
 			UpdatedAt: chirp.UpdatedAt,
@@ -32,5 +32,38 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	respondWithJSON(w, http.StatusCreated, resp)
+	respondWithJSON(w, http.StatusOK, resp)
+}
+
+func (cfg *apiConfig) handlerGetChirpsByID(w http.ResponseWriter, r *http.Request) {
+	chirpID := r.PathValue("chirpID")
+	chirpUUID, err := uuid.Parse(chirpID)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			err,
+			"Failed to parse UUID",
+		)
+		return
+	}
+	chirp, err := cfg.db.GetChirpsByID(r.Context(), uuid.UUID(chirpUUID))
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			err,
+			"Failed to retrieve chirp",
+		)
+		return
+	}
+
+	resp := Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+	respondWithJSON(w, http.StatusOK, resp)
 }
