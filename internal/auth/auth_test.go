@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
@@ -32,7 +33,8 @@ func TestHashPassword(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			hash, err := HashPassword(tc.input)
 
-			if (err != nil && tc.want == nil) || (err == nil && tc.want != nil) {
+			// if (err != nil && tc.want == nil) || (err == nil && tc.want != nil) {
+			if !errors.Is(err, tc.want) {
 				t.Fatalf("unexpected error\n\twant: %v, got: %v\n", tc.want, err)
 			}
 
