@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -14,38 +15,25 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var ErrFailedToLoadEnvVars = errors.New("failed to load environment variables")
+var ErrDatabaseConnFailed = errors.New("failed to connect to database")
+
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	tokenSecret    string
 }
 
 func main() {
-	godotenv.Load()
-	dbURL := os.Getenv("DB_URL")
-	if dbURL == "" {
-		log.Fatal("DB_URL is required")
-	}
-
-	platform := os.Getenv("PLATFORM")
-	if platform == "" {
-		log.Fatal("PLATFORM is required")
-	}
-
-	dbConn, err := sql.Open("postgres", dbURL)
+	cfg := &apiConfig{}
+	err := configureEnv(cfg)
 	if err != nil {
-		log.Printf("Failed to connect to DB: %s\n", err)
-		return
+		log.Fatal(err)
 	}
-	dbQueries := database.New(dbConn)
 
 	serverRootDir := "."
 	port := "8080"
-
-	cfg := &apiConfig{
-		db:       dbQueries,
-		platform: platform,
-	}
 
 	fileserverHanlder := http.StripPrefix(
 		"/app",
@@ -77,4 +65,36 @@ func main() {
 
 	log.Printf("Serving files from %s on port %s\n", serverRootDir, port)
 	log.Fatal(server.ListenAndServe())
+}
+
+func configureEnv(cfg *apiConfig) error {
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Printf("DB_URL is required")
+		return ErrFailedToLoadEnvVars
+	}
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("Failed to connect to DB: %s\n", err)
+		return ErrDatabaseConnFailed
+	}
+	dbQueries := database.New(dbConn)
+
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Printf("PLATFORM is required")
+		return ErrFailedToLoadEnvVars
+	}
+
+	secret := os.Getenv("TOKEN_SECRET")
+	if secret == "" {
+		log.Printf("TOKEN_SECRET is required")
+		return ErrFailedToLoadEnvVars
+	}
+
+	cfg.db = dbQueries
+	cfg.platform = platform
+	cfg.tokenSecret = secret
+	return nil
 }
