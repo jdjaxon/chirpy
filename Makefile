@@ -39,14 +39,14 @@ generate-go-queries:
 .PHONY: start-db
 start-db:
 	@echo "Checking status of container '$(DB_NAME)'..."
-	@if docker container inspect $(DB_NAME) >/dev/null 2>&1; then \
-		echo "Container '$(DB_NAME)' is already running."; \
+	@if ! docker container inspect $(DB_NAME) >/dev/null 2>&1; then \
+		echo "Container '$(DB_NAME)' does not exist. Running 'run-db'..."; \
+		$(MAKE) run-db; \
 	elif [ "$$(docker inspect -f '{{.State.Running}}' $(DB_NAME))" = "false" ]; then \
 		echo "Container '$(DB_NAME)' exists but is not running. Starting..."; \
 		docker start $(DB_NAME); \
 	else \
-		echo "Container '$(DB_NAME)' does not exist. Running 'run-db'..."; \
-		$(MAKE) run-db; \
+		echo "Container '$(DB_NAME)' is already running."; \
 	fi
 	@# Giving postgres time to start
 	@sleep 0.05
