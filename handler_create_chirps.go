@@ -83,6 +83,7 @@ func (cfg *apiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request
 		Body:      newChirp.Body,
 		UserID:    newChirp.UserID,
 	}
+
 	respondWithJSON(w, http.StatusCreated, resp)
 }
 
