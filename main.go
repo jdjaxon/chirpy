@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/jdjaxon/chirpy/internal/database"
 	"github.com/joho/godotenv"
@@ -19,14 +20,19 @@ var ErrFailedToLoadEnvVars = errors.New("failed to load environment variables")
 var ErrDatabaseConnFailed = errors.New("failed to connect to database")
 
 type apiConfig struct {
-	fileserverHits atomic.Int32
-	db             *database.Queries
-	platform       string
-	tokenSecret    string
+	fileserverHits  atomic.Int32
+	db              *database.Queries
+	platform        string
+	tokenSecret     string
+	jwtTTL          time.Duration
+	refreshTokenTTL time.Duration
 }
 
 func main() {
-	cfg := &apiConfig{}
+	cfg := &apiConfig{
+		jwtTTL:          time.Hour,
+		refreshTokenTTL: 60 * 24 * time.Hour, // 60 days
+	}
 	err := configureEnv(cfg)
 	if err != nil {
 		log.Fatal(err)
@@ -44,19 +50,17 @@ func main() {
 
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHanlder))
 
-	mux.HandleFunc("GET /api/healthz", handlerHealthcheck)
+	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
+	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
 
 	mux.HandleFunc("GET /api/chirps", cfg.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.handlerGetChirpsByID)
 	mux.HandleFunc("POST /api/chirps", cfg.handlerCreateChirps)
-
-	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
-
+	mux.HandleFunc("GET /api/healthz", handlerHealthcheck)
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
-
-	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
-
-	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
+	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", cfg.handlerRevoke)
+	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
 
 	server := &http.Server{
 		Addr:    ":" + port,
