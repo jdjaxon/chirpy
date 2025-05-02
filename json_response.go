@@ -8,7 +8,7 @@ import (
 
 func respondWithError(w http.ResponseWriter, statusCode int, err error, msg string) {
 	if err != nil {
-		log.Println(err)
+		log.Printf("%v: %v\n", err.Error(), msg)
 	}
 	type errorResp struct {
 		Error string `json:"error"`
@@ -23,7 +23,6 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 	w.Header().Set("content-type", "application/json")
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
 		return
 	}
