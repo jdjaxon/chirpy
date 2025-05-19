@@ -4,25 +4,47 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/google/uuid"
+	"github.com/jdjaxon/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.db.GetChirps(r.Context())
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			err,
-			"Failed to get chirps",
-		)
-		return
+	authorIDStr := r.URL.Query().Get("author_id")
+	sortStr := r.URL.Query().Get("sort")
+
+	var chirps []database.Chirp
+	var err error
+
+	if authorIDStr != "" {
+		authorUUID, err := uuid.Parse(authorIDStr)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err, "Failed to parse author UUID")
+			return
+		}
+		chirps, err = cfg.db.GetChirpsByAuthor(r.Context(), authorUUID)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err, "Failed to get chirps")
+			return
+		}
+	} else {
+		chirps, err = cfg.db.GetChirps(r.Context())
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err, "Failed to get chirps")
+			return
+		}
+	}
+
+	// Chirps are sorted by created_at in ascending order from DB.
+	if sortStr == "desc" {
+		slices.Reverse(chirps)
 	}
 
 	type response struct {
 		Chirps []Chirp
 	}
+
 	resp := []Chirp{}
 	for _, chirp := range chirps {
 		resp = append(resp, Chirp{
