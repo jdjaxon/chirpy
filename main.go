@@ -26,6 +26,7 @@ type apiConfig struct {
 	tokenSecret     string
 	jwtTTL          time.Duration
 	refreshTokenTTL time.Duration
+	polkaKey        string
 }
 
 func main() {
@@ -69,6 +70,8 @@ func main() {
 	mux.HandleFunc("POST /api/users", cfg.handlerCreateUser)
 	mux.HandleFunc("PUT /api/users", cfg.handlerUpdateUser)
 
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.handlerPolka)
+
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
@@ -104,8 +107,16 @@ func configureEnv(cfg *apiConfig) error {
 		return ErrFailedToLoadEnvVars
 	}
 
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Printf("POLKA_KEY is required")
+		return ErrFailedToLoadEnvVars
+	}
+
 	cfg.db = dbQueries
 	cfg.platform = platform
 	cfg.tokenSecret = secret
+	cfg.polkaKey = polkaKey
+
 	return nil
 }
